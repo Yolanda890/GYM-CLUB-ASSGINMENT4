@@ -53,7 +53,6 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
             }
         });
         Picasso.with(mContext).load(list2.get(i)).into(viewHolder.myPic);
-
     }
 
     @NonNull

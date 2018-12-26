@@ -13,17 +13,20 @@
         android:layout_height="match_parent"
         android:focusable="true"
         android:clickable="true" />
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+
         <LinearLayout
             android:id="@+id/ll"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/dp_8"
             android:layout_marginLeft="@dimen/dp_15"
+            android:layout_marginTop="@dimen/dp_8"
             android:layout_marginRight="@dimen/dp_15"
             android:orientation="horizontal">
+
             <Button
                 android:id="@+id/bt"
                 android:layout_width="0dp"
@@ -36,10 +39,10 @@
                 android:id="@+id/button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:background="@color/map_buttonn"
                 android:layout_marginLeft="@dimen/dp_4"
                 android:layout_marginRight="@dimen/dp_4"
+                android:layout_weight="1"
+                android:background="@color/map_buttonn"
                 android:text="@string/stringSetal" />
 
             <Button

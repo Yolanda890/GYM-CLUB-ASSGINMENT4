@@ -132,6 +132,7 @@
     <string name="stringSetToOrigin">复位</string>
     <string name="stringSetal">卫星</string>
     <string name="stringDriveHere">路线规划</string>
+    <string name="map"><u>查看附近的健身房</u></string>
     <!-- 地图 -->
 
 </resources>

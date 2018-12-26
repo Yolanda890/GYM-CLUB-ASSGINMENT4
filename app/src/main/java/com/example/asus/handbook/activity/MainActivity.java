@@ -76,16 +76,16 @@ public class MainActivity extends AppCompatActivity {
                         bu.setSex('M');
                     }
                     bu.signUp(new SaveListener<MyUser>() {
-                        @Override
-                        public void done(MyUser user, BmobException e) {
-                            if(e==null){
-                                Toast.makeText(getApplicationContext(), "注册成功", Toast.LENGTH_SHORT).show();
-                            }else{
-                                System.out.println(e);
-                                Toast.makeText(getApplicationContext(), "注册失败", Toast.LENGTH_SHORT).show();
-                            }}
-                    });
-                }
+                    @Override
+                    public void done(MyUser user, BmobException e) {
+                        if(e==null){
+                            Toast.makeText(getApplicationContext(), "注册成功", Toast.LENGTH_SHORT).show();
+                        }else{
+                            System.out.println(e);
+                            Toast.makeText(getApplicationContext(), "注册失败", Toast.LENGTH_SHORT).show();
+                        }}
+                });
+            }
                 else{
                     Toast.makeText(getApplicationContext(), "两次密码不一致", Toast.LENGTH_SHORT).show();
                 }

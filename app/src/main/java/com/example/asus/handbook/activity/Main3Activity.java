@@ -172,7 +172,12 @@ public class Main3Activity extends AppCompatActivity {
         editText = findViewById(R.id.editText);
 
     }
-
+    public void openMap(View view) {
+        // 跳转
+        Intent intent=new Intent(Main3Activity.this, MapActivity.class);
+        intent.putExtra("username",currentusername);
+        startActivity(intent);
+    }
 
 }
 
