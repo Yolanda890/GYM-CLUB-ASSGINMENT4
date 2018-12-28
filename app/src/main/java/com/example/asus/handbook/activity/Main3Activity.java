@@ -1,6 +1,9 @@
 package com.example.asus.handbook.activity;
 
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -21,6 +24,8 @@ import com.example.asus.handbook.R;
 import com.example.asus.handbook.adapter.MyAdapter;
 import com.example.asus.handbook.dataobject.Course;
 import com.example.asus.handbook.dataobject.SC;
+import com.example.asus.handbook.userdefined.DBOpenHelper;
+import com.example.asus.handbook.userdefined.ImageManage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +43,10 @@ public class Main3Activity extends AppCompatActivity {
     private MyAdapter mAdapter;
     private static String currentusername;
     private List<String> values1,values2;
+    private List<byte[]> values3;
     private ImageButton searchButton;
     private EditText editText;
+    private int symbol=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +107,11 @@ public class Main3Activity extends AppCompatActivity {
         linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         view_myCourse.setLayoutManager(linearLayoutManager);
         view_myCourse.setItemAnimator(new DefaultItemAnimator());
+
+        final ImageManage imageManage=new  ImageManage();
+        DBOpenHelper helper = new DBOpenHelper(Main3Activity.this,"me.db",null,1);
+        final SQLiteDatabase db = helper.getWritableDatabase();
+
         BmobQuery<SC> query = new BmobQuery<>();
         query.addWhereEqualTo("username",currentusername);
         query.findObjects(new FindListener<SC>() {
@@ -108,12 +120,24 @@ public class Main3Activity extends AppCompatActivity {
                 if(e == null){
                     for(int i = 0;i < list.size();i++){
                         values1.add(list.get(i).getCoursename());
+                        Cursor c = db.query("sc", null, "username=? and coursename=?", new String[]{currentusername, list.get(i).getCoursename()}, null, null, null);
+                        if (c == null) {
+                            //insert data
+                            ContentValues values = new ContentValues();
+                            values.put("username", currentusername);
+                            values.put("coursename", list.get(i).getCoursename());
+                        }
+                        c.close();
                     }
+                    db.close();
                 }
                 else{
-                    System.out.println("error");
-                    Toast ts = Toast.makeText(Main3Activity.this,getResources().getString(getResources().getIdentifier("stringShowMCFail", "string", getPackageName())), Toast.LENGTH_LONG);
-                    ts.show() ;
+                    Cursor c=db.query("sc",new String[]{"coursename"},"username",new String[]{currentusername},null,null,null);
+                    while(!c.moveToNext()){
+                        String coursename=c.getString(c.getColumnIndex("coursename"));
+                        values1.add(coursename);
+                    }
+                    c.close();db.close();
                 }
             }
         });
@@ -130,20 +154,27 @@ public class Main3Activity extends AppCompatActivity {
                             }
                         }
                     }
-                    if(values1.size() != 0 && values2.size() != 0){
-                        ViewGroup.LayoutParams layoutParams = myText.getLayoutParams();
-                        layoutParams.height = 0;
-                        myText.setLayoutParams(layoutParams);
-                        /* 加两个参数 */
-                        mAdapter = new MyAdapter("课程",currentusername,values1,values2, R.layout.layout_mycoursecard, Main3Activity.this);
-                        view_myCourse.setAdapter(mAdapter);
-                    }
+
 
                 }
                 else{
-                    System.out.println("error");
-                    Toast ts = Toast.makeText(Main3Activity.this,getResources().getString(getResources().getIdentifier("stringShowMCFail", "string", getPackageName())), Toast.LENGTH_LONG);
-                    ts.show() ;
+                    for(int j = 0;j < values1.size();j++) {
+                        Cursor c = db.query("course", new String[]{"courseimage"}, "coursename", new String[]{values1.get(j)}, null, null, null);
+                        while (!c.moveToNext()) {
+                            byte[] courseimage = c.getBlob(c.getColumnIndex("courseimage"));
+                            values3.add(courseimage);
+                        }
+                        c.close();
+                    }
+                   db.close();
+                }
+                if(values1.size() != 0 && values2.size() != 0){
+                    ViewGroup.LayoutParams layoutParams = myText.getLayoutParams();
+                    layoutParams.height = 0;
+                    myText.setLayoutParams(layoutParams);
+                    /* 加两个参数 */
+                    mAdapter = new MyAdapter("课程",currentusername,values1,values2,values3, R.layout.layout_mycoursecard, Main3Activity.this,symbol);
+                    view_myCourse.setAdapter(mAdapter);
                 }
             }
         });

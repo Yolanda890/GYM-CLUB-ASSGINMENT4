@@ -2,6 +2,8 @@ package com.example.asus.handbook.activity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -23,6 +25,8 @@ import com.example.asus.handbook.R;
 import com.example.asus.handbook.adapter.SearchAdapter;
 import com.example.asus.handbook.dataobject.Coach;
 import com.example.asus.handbook.dataobject.Course;
+import com.example.asus.handbook.userdefined.DBOpenHelper;
+import com.example.asus.handbook.userdefined.ImageManage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,11 +43,16 @@ public class SearchResultActivity extends AppCompatActivity {
     private String type;
     private List<String> values1;
     private List<String> values2;
+    private List<byte[]> values3;
     private ImageButton searchButton;
     private Spinner spinner;
     private EditText editText;
     private SwipeRefreshLayout refreshLayout;
     private static String currentusername;
+    private int symbol=0;
+    private ImageManage imageManage ;
+    DBOpenHelper helper;
+    private SQLiteDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +68,10 @@ public class SearchResultActivity extends AppCompatActivity {
         navigationView = findViewById(R.id.navigation);
         navigationView.getMenu().getItem(0).setChecked(false);
         navigationView.getMenu().getItem(2).setChecked(true);
+
+       imageManage=new  ImageManage();
+       helper = new DBOpenHelper(SearchResultActivity .this,"me.db",null,1);
+       db = helper.getWritableDatabase();
 
         navigationView = findViewById(R.id.navigation);
         navigationView.setOnNavigationItemSelectedListener(
@@ -104,6 +117,7 @@ public class SearchResultActivity extends AppCompatActivity {
 
         values1 = new ArrayList<>();
         values2 = new ArrayList<>();
+        values3 = new ArrayList<>();
 
         switchType(searchType,searchInput);
 
@@ -171,6 +185,7 @@ public class SearchResultActivity extends AppCompatActivity {
     }
 
     private void searchCourse(final String searchInput){
+
         BmobQuery<Course> query=new BmobQuery<Course>();
         query.findObjects(new FindListener<Course>() {
             @Override
@@ -182,19 +197,32 @@ public class SearchResultActivity extends AppCompatActivity {
                             values2.add(list.get(i).getImage());
                         }
                     }
-                    if(values1.size()!=0){
-                        view_course.removeAllViews();
 
-                        /* 加参数 */
-                        sAdapter = new SearchAdapter("课程",currentusername,values1,values2, R.layout.layout_coursecard, SearchResultActivity.this);
-                        view_course.setAdapter(sAdapter);
-                    }
-                    else{
-                        System.out.println("error");
-                        view_course.removeAllViews();
-                        Toast ts = Toast.makeText(SearchResultActivity.this,getResources().getString(getResources().getIdentifier("stringSearchingFail", "string", getPackageName())), Toast.LENGTH_LONG);
-                        ts.show() ;
-                    }
+                }
+                else{
+                    symbol=1;
+                    Cursor c=db.query("course",new String[]{"coursename","courseimage","coursetype"},null,null,null,null,null);
+                    while(!c.moveToNext()) {
+                        String coachname = c.getString(c.getColumnIndex("coursename"));
+                        String coachtype = c.getString(c.getColumnIndex("coursetype"));
+                        if (searchInput.contains("课程") || coachname.contains(searchInput) || coachtype.contains(searchInput)) {
+
+
+                            values1.add(coachname);
+                            byte[] imgData = null;
+                            //将Blob数据转化为字节数组
+                            imgData = c.getBlob(c.getColumnIndex("courseimage"));
+                            values3.add(imgData);
+                        }
+                        c.close();
+                    }db.close();
+                }
+                if(values1.size()!=0){
+                    view_course.removeAllViews();
+
+                    /* 加参数 */
+                    sAdapter = new SearchAdapter("课程",currentusername,values1,values2,values3, R.layout.layout_coursecard, SearchResultActivity.this,symbol);
+                    view_course.setAdapter(sAdapter);
                 }
                 else{
                     System.out.println("error");
@@ -219,19 +247,34 @@ public class SearchResultActivity extends AppCompatActivity {
                             values2.add(list.get(i).getImage());
                         }
                     }
-                    if(values1.size()!=0){
-                        view_course.removeAllViews();
 
-                        /* 加参数 */
-                        sAdapter = new SearchAdapter("教练",currentusername,values1,values2, R.layout.layout_coursecard, SearchResultActivity.this);
-                        view_course.setAdapter(sAdapter);
-                    }
-                    else{
-                        System.out.println("error");
-                        view_course.removeAllViews();
-                        Toast ts = Toast.makeText(SearchResultActivity.this,getResources().getString(getResources().getIdentifier("stringSearchingFail", "string", getPackageName())), Toast.LENGTH_LONG);
-                        ts.show() ;
-                    }
+                }
+                else {
+
+                        symbol = 1;
+                        Cursor c = db.query("coach", new String[]{"coachname", "coachimage"}, null, null, null, null, null);
+                        while (!c.moveToNext()) {
+                            String coachname = c.getString(c.getColumnIndex("coachname"));
+                            if (searchInput.contains("教练") ||coachname.contains(searchInput)) {
+
+
+                                values1.add(coachname);
+                                byte[] imgData = null;
+                                //将Blob数据转化为字节数组
+                                imgData = c.getBlob(c.getColumnIndex("coachimage"));
+                                values3.add(imgData);
+                            }
+                        }
+                        c.close();
+                        db.close();
+
+                }
+                if(values1.size()!=0){
+                    view_course.removeAllViews();
+
+                    /* 加参数 */
+                    sAdapter = new SearchAdapter("教练",currentusername,values1,values2,values3, R.layout.layout_coursecard, SearchResultActivity.this,symbol);
+                    view_course.setAdapter(sAdapter);
                 }
                 else{
                     System.out.println("error");
@@ -258,20 +301,35 @@ public class SearchResultActivity extends AppCompatActivity {
                             values2.add(list.get(i).getImage());
                         }
                     }
-                    if(values1.size()!=0){
-                        view_course.removeAllViews();
 
-                        /* 加参数 */
-                        sAdapter = new SearchAdapter("课程",currentusername,values1,values2, R.layout.layout_coursecard, SearchResultActivity.this);
-                        view_course.setAdapter(sAdapter);
-                    }
-                    else{
-                        System.out.println("course not found");
-                        view_course.removeAllViews();
-                    }
                 }
                 else{
-                    System.out.println("error");
+                    symbol=1;
+                    Cursor c=db.query("course",new String[]{"coursename","courseimage","coursetype"},null,null,null,null,null);
+                    while(!c.moveToNext()) {
+                        String coachname = c.getString(c.getColumnIndex("coursename"));
+                        String coachtype = c.getString(c.getColumnIndex("coursetype"));
+                        if(s_i.contains("所有") || s_i.contains("课程")|| coachname.contains(s_i)|| coachtype.contains(s_i)){
+
+
+                            values1.add(coachname);
+                            byte[] imgData = null;
+                            //将Blob数据转化为字节数组
+                            imgData = c.getBlob(c.getColumnIndex("courseimage"));
+                            values3.add(imgData);
+                        }
+                        c.close();
+                    }db.close();
+                }
+                if(values1.size()!=0){
+                    view_course.removeAllViews();
+
+                    /* 加参数 */
+                    sAdapter = new SearchAdapter("课程",currentusername,values1,values2,values3, R.layout.layout_coursecard, SearchResultActivity.this,symbol);
+                    view_course.setAdapter(sAdapter);
+                }
+                else{
+                    System.out.println("course not found");
                     view_course.removeAllViews();
                 }
             }
@@ -288,24 +346,36 @@ public class SearchResultActivity extends AppCompatActivity {
                             values2.add(list.get(i).getImage());
                         }
                     }
-                    if(values1.size()!=0){
-                        view_course.removeAllViews();
-
-                        /* 加参数 */
-                        sAdapter = new SearchAdapter("教练",currentusername,values1,values2, R.layout.layout_coursecard, SearchResultActivity.this);
-                        view_course.setAdapter(sAdapter);
-                    }
-                    else{
-                        System.out.println("coach not found");
-                    }
                 }
                 else{
-                    System.out.println("error");
-                    if(view_course.getChildCount() == 0){
-                        System.out.println("all not found");
-                        Toast ts = Toast.makeText(SearchResultActivity.this,getResources().getString(getResources().getIdentifier("stringSearchingFail", "string", getPackageName())), Toast.LENGTH_LONG);
-                        ts.show() ;
+                    symbol = 1;
+                    Cursor c = db.query("coach", new String[]{"coachname", "coachimage"}, null, null, null, null, null);
+                    while (!c.moveToNext()) {
+                        String coachname = c.getString(c.getColumnIndex("coachname"));
+                        if(s_i.contains("所有") || s_i.contains("教练") || coachname.contains(s_i)){
+
+
+                            values1.add(coachname);
+                            byte[] imgData = null;
+                            //将Blob数据转化为字节数组
+                            imgData = c.getBlob(c.getColumnIndex("coachimage"));
+                            values3.add(imgData);
+                        }
                     }
+                    c.close();
+                    db.close();
+
+
+                }
+                if(values1.size()!=0){
+                    view_course.removeAllViews();
+
+                    /* 加参数 */
+                    sAdapter = new SearchAdapter("教练",currentusername,values1,values2,values3, R.layout.layout_coursecard, SearchResultActivity.this,symbol);
+                    view_course.setAdapter(sAdapter);
+                }
+                else{
+                    System.out.println("coach not found");
                 }
 
             }

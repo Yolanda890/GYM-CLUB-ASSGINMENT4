@@ -1,9 +1,12 @@
 package com.example.asus.handbook.activity;
 
 import android.Manifest;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -27,6 +30,9 @@ import android.widget.Toast;
 import com.example.asus.handbook.R;
 import com.example.asus.handbook.dataobject.MyUser;
 import com.example.asus.handbook.userdefined.CircleTransform;
+import com.example.asus.handbook.userdefined.DBOpenHelper;
+import com.example.asus.handbook.userdefined.ImageManage;
+import com.example.asus.handbook.userdefined.NetWorkUtil;
 import com.squareup.picasso.MemoryPolicy;
 import com.squareup.picasso.Picasso;
 
@@ -120,22 +126,52 @@ public class MeActivity extends AppCompatActivity {
 
         figure = findViewById(R.id.image);
 
-        BmobQuery<MyUser> query = new BmobQuery<>();
-        query.addWhereEqualTo("username",currentusername);
-        query.findObjects(new FindListener<MyUser>() {
-            @Override
-            public void done(List<MyUser> list, BmobException e) {
-                if(e == null){
-                    if(list.size()!= 0){
-                        Picasso.with(MeActivity.this).load(list.get(0).getFigureimage()).memoryPolicy(MemoryPolicy.NO_CACHE)
-                                .transform(new CircleTransform()).into(figure);
-                }
-                }
-                else{
+        final ImageManage imageManage=new  ImageManage();
+        DBOpenHelper helper = new DBOpenHelper(MeActivity.this,currentusername+"_2.db",null,1);
+        final SQLiteDatabase db = helper.getWritableDatabase();
 
+        NetWorkUtil netWorkUtil = new NetWorkUtil();
+        boolean judge= netWorkUtil.isNetworkAvailable(MeActivity.this);
+
+        if(judge) {
+            BmobQuery<MyUser> query = new BmobQuery<>();
+            query.addWhereEqualTo("username", currentusername);
+            query.findObjects(new FindListener<MyUser>() {
+                @Override
+                public void done(List<MyUser> list, BmobException e) {
+                    if (e == null) {
+                        if (list.size() != 0) {
+                            Picasso.with(MeActivity.this).load(list.get(0).getFigureimage()).memoryPolicy(MemoryPolicy.NO_CACHE)
+                                    .transform(new CircleTransform()).into(figure);
+                            Cursor c = db.query("user", null, "username=?", new String[]{currentusername}, null, null, null);
+                            if (c == null) {
+                                //insert data
+                                ContentValues values = new ContentValues();
+                                values.put("username", currentusername);
+                                values.put("coachimage", imageManage.bitmabToBytes(list.get(0).getFigureimage()));//图片转为二进制
+                                long rowid = db.insert("user",null,values);
+                            }
+                            c.close();
+                        }
+                        db.close();
+
+                    }
                 }
+            });
+        }else {
+            Cursor c = db.query("user", new String[]{"image"}, "username", new String[]{currentusername}, null, null, null);
+            while (c.moveToNext()) {
+
+                //将Blob数据转化为字节数组
+                byte[] imgData = c.getBlob(c.getColumnIndex("image"));
+                Bitmap bitmap = imageManage.getBitmapFromByte(imgData);
+                figure.setImageBitmap(bitmap);
+
             }
-        });
+            c.close();
+            db.close();
+
+        }
 
         username = findViewById(R.id.textView2);
         username.setText((String) BmobUser.getObjectByKey("username"));

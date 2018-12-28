@@ -1,6 +1,9 @@
 package com.example.asus.handbook.fragment;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -14,9 +17,13 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.example.asus.handbook.R;
+import com.example.asus.handbook.activity.CommunityActivity;
 import com.example.asus.handbook.adapter.SearchAdapter;
 import com.example.asus.handbook.dataobject.Coach;
 import com.example.asus.handbook.dataobject.Course;
+import com.example.asus.handbook.userdefined.DBOpenHelper;
+import com.example.asus.handbook.userdefined.ImageManage;
+import com.example.asus.handbook.userdefined.NetWorkUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,9 +62,11 @@ public class CourseFragment extends Fragment {
 
     private List<String> values1;
     private List<String> values2;
+    private List<byte[]> values3;
     private SwipeRefreshLayout refreshLayout;
 
     private OnFragmentInteractionListener mListener;
+    private int symbol=0;
 
     public CourseFragment() {
         // Required empty public constructor
@@ -114,6 +123,7 @@ public class CourseFragment extends Fragment {
 
         values1 = new ArrayList<>();
         values2 = new ArrayList<>();
+        values3 = new ArrayList<>();
 
         refreshLayout = view.findViewById(R.id.refresh_search);
         refreshLayout.setColorSchemeResources(R.color.blue,R.color.blue,R.color.green);
@@ -130,58 +140,141 @@ public class CourseFragment extends Fragment {
         return view;
     }
 
-    private void refresh(){
+    private void refresh() {
+        final ImageManage imageManage = new ImageManage();
+        DBOpenHelper helper = new DBOpenHelper(getContext(), currentusername + "_2.db", null, 1);
+        final SQLiteDatabase db = helper.getWritableDatabase();
         System.out.println("refresh");
         values1.clear();
         values2.clear();
-        if(type.equalsIgnoreCase("教练")){
-            BmobQuery<Coach> query=new BmobQuery<Coach>();
-            query.findObjects(new FindListener<Coach>() {
-                @Override
-                public void done(List<Coach> list, BmobException e) {
-                    if(e == null){
-                        for(int i = 0;i < list.size();i++){
-                            values1.add(list.get(i).getCName());
-                            values2.add(list.get(i).getImage());
+        NetWorkUtil netWorkUtil = new NetWorkUtil();
+        boolean judge = netWorkUtil.isNetworkAvailable(getContext());
+        if (judge) {
+            if (type.equalsIgnoreCase("教练")) {
+                BmobQuery<Coach> query = new BmobQuery<Coach>();
+                query.findObjects(new FindListener<Coach>() {
+                    @Override
+                    public void done(List<Coach> list, BmobException e) {
+                        if (e == null) {
+                            for (int i = 0; i < list.size(); i++) {
+                                values1.add(list.get(i).getCName());
+                                values2.add(list.get(i).getImage());
+                                Cursor c = db.query("coach", new String[]{"coachname"}, "coachname=?", new String[]{list.get(i).getCName()}, null, null, null);
+                                if (c.getCount() == 0) {
+                                    //insert data
+                                    ContentValues values = new ContentValues();
+                                    values.put("coachname", list.get(i).getCName());
+                                    values.put("coachtype", list.get(i).getCoachtype());
+                                    values.put("coachimage", imageManage.bitmabToBytes(list.get(i).getImage()));//图片转为二进制
+                                    long rowid = db.insert("coach", null, values);
+                                }
+                                c.close();
+                            }
+                            db.close();
+
                         }
 
+
                         /* 加参数 */
-                        sAdapter = new SearchAdapter("教练",currentusername,values1,values2, R.layout.layout_coursecard, getContext());
+                        sAdapter = new SearchAdapter("教练", currentusername, values1, values2, values3, R.layout.layout_coursecard, getContext(), symbol);
                         view_course.setAdapter(sAdapter);
                     }
-                    else{
-                        System.out.println("error");
-                        Toast ts = Toast.makeText(getContext(),getResources().getString(getResources().getIdentifier("stringShowCourseFail", "string", getContext().getPackageName())), Toast.LENGTH_LONG);
-                        ts.show() ;
-                    }
+                });
+            } else {
+                BmobQuery<Course> query = new BmobQuery<Course>();
+                query.addWhereEqualTo("coursetype", type);   //条件查询
+                query.findObjects(new FindListener<Course>() {
+                    @Override
+                    public void done(List<Course> list, BmobException e) {
+                        if (e == null) {
+                            for (int i = 0; i < list.size(); i++) {
+                                values1.add(list.get(i).getName());
+                                values2.add(list.get(i).getImage());
+                                Cursor c = db.query("course", new String[]{"coursename"}, "coursename=?", new String[]{list.get(i).getName()}, null, null, null);
+                                if (c.getCount() == 0) {
+                                    //insert data
+                                    ContentValues values = new ContentValues();
+                                    values.put("coursename", list.get(i).getName());
+                                    values.put("coursetype", type);
+                                    values.put("courseimage", imageManage.bitmabToBytes(list.get(i).getImage()));//图片转为二进制
+                                    long rowid = db.insert("course", null, values);
 
-                }
-            });
-        }
-        else{
-            BmobQuery<Course> query=new BmobQuery<Course>();
-            query.addWhereEqualTo("coursetype",type);   //条件查询
-            query.findObjects(new FindListener<Course>() {
-                @Override
-                public void done(List<Course> list, BmobException e) {
-                    if(e == null){
-                        for(int i = 0;i < list.size();i++){
-                            values1.add(list.get(i).getName());
-                            values2.add(list.get(i).getImage());
+                                }
+                                c.close();
+                            }
+                            db.close();
+
                         }
 
-                        /* 加参数 */
-                        sAdapter = new SearchAdapter("课程",currentusername,values1,values2, R.layout.layout_coursecard, getContext());
-                        view_course.setAdapter(sAdapter);
                     }
-                    else{
-                        System.out.println("error");
-                        Toast ts = Toast.makeText(getContext(),getResources().getString(getResources().getIdentifier("stringShowCourseFail", "string", getContext().getPackageName())), Toast.LENGTH_LONG);
-                        ts.show() ;
+                });
+                sAdapter = new SearchAdapter("课程", currentusername, values1, values2, values3, R.layout.layout_coursecard, getContext(), symbol);
+                view_course.setAdapter(sAdapter);
+
+            }
+        } else {
+            if (type.equalsIgnoreCase("教练")) {
+                symbol = 1;
+                int i = 0;
+                Cursor c = null;
+                while (true) {
+
+                    c = db.query("coach", new String[]{"coachname", "coachimage"}, null, null, null, null, null, String.valueOf(i) + ",1");
+                    i++;
+                    if (c.moveToNext()) {
+                        String coachname = c.getString(c.getColumnIndex("coachname"));
+
+                        values1.add(coachname);
+                        byte[] imgData = null;
+                        //将Blob数据转化为字节数组
+                        imgData = c.getBlob(c.getColumnIndex("coachimage"));
+                        values3.add(imgData);
+                    } else {
+                        break;
+                    }
+                    c.close();
+
+                    if (c != null) {
+                        c.close();
+                    }
+                }
+                db.close();
+                sAdapter = new SearchAdapter("教练", currentusername, values1, values2, values3, R.layout.layout_coursecard, getContext(), symbol);
+                view_course.setAdapter(sAdapter);
+            } else {
+                symbol = 1;
+                Cursor c = null;
+                int i = 0;
+
+                while (true) {
+
+                    c = db.query("course", new String[]{"coursename", "courseimage"}, "coursetype=?", new String[]{type}, null, null, null, String.valueOf(i) + ",1");
+                    i++;
+                    if (c.moveToNext() ) {
+                        String coachname = c.getString(c.getColumnIndex("coursename"));
+
+                        values1.add(coachname);
+                        byte[] imgData = null;
+                        //将Blob数据转化为字节数组
+                        imgData = c.getBlob(c.getColumnIndex("courseimage"));
+                        values3.add(imgData);
+                    } else {
+                        break;
                     }
 
+                    c.close();
+
                 }
-            });
+                if (c != null) {
+                    c.close();
+                }
+
+                db.close();
+                sAdapter = new SearchAdapter("课程", currentusername, values1, values2, values3, R.layout.layout_coursecard, getContext(), symbol);
+                view_course.setAdapter(sAdapter);
+            }
+            /* 加参数 */
+
         }
     }
 

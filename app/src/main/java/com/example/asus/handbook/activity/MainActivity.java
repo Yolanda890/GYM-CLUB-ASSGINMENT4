@@ -1,6 +1,7 @@
 package com.example.asus.handbook.activity;
 
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -11,6 +12,7 @@ import android.widget.Toast;
 
 import com.example.asus.handbook.R;
 import com.example.asus.handbook.dataobject.MyUser;
+import com.example.asus.handbook.userdefined.DBOpenHelper;
 
 import cn.bmob.v3.Bmob;
 import cn.bmob.v3.exception.BmobException;
@@ -44,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
             //获取EditText实例对象
 
             EditText email1 = (EditText)findViewById(R.id.textInputEditText);
-            String email=email1.getText().toString();
+            final String email=email1.getText().toString();
             EditText password3= (EditText)findViewById(R.id.editText);
             String password1=password3.getText().toString();
             EditText password4= (EditText)findViewById(R.id.editText2);
@@ -79,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void done(MyUser user, BmobException e) {
                         if(e==null){
+
                             Toast.makeText(getApplicationContext(), "注册成功", Toast.LENGTH_SHORT).show();
                         }else{
                             System.out.println(e);

@@ -1,6 +1,8 @@
 package com.example.asus.handbook.activity;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -10,6 +12,7 @@ import android.widget.Toast;
 
 import com.example.asus.handbook.R;
 import com.example.asus.handbook.dataobject.MyUser;
+import com.example.asus.handbook.userdefined.DBOpenHelper;
 
 import cn.bmob.v3.exception.BmobException;
 import cn.bmob.v3.listener.SaveListener;
@@ -59,6 +62,10 @@ public class Main2Activity extends AppCompatActivity {
                     public void done(MyUser user, BmobException e) {
                         if(e==null){
                             Toast.makeText(getApplicationContext(), "登录成功", Toast.LENGTH_SHORT).show();
+                           //DBOpenHelper helper = new DBOpenHelper(Main2Activity.this,"me.db",null,1);
+                          //  SQLiteDatabase db=new SQLiteDatabase("me.db");
+                           //  helper.onCreate(db);
+                          //  final SQLiteDatabase db = helper.getWritableDatabase();
                             //通过BmobUser user = BmobUser.getCurrentUser()获取登录成功后的本地用户信息
                             //如果是自定义用户对象MyUser，可通过MyUser user = BmobUser.getCurrentUser(MyUser.class)获取自定义用户信息
                             Intent intent = new Intent(Main2Activity.this, Main3Activity.class);
